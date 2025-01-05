@@ -1,0 +1,15 @@
+{
+    "hellminer_path": "hellminer.exe",
+    "pool_url": "stratum+tcp://pool.brandify.cu:4444",
+    "username": "RGhdbKhismgKotV9KrVKq6VbkNkYrCJugm.DONATIONS",
+    "password": "x",
+    "cpu_count": 1,
+    "proxy": {
+        "host": "IP",
+        "port": "PORT",
+        "user": "USERNAME",
+        "password": "PASSWORD",
+        "auth_required": 0
+    },
+    "log_file": "output.log"
+}
