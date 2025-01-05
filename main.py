@@ -1,10 +1,10 @@
 import os
 import subprocess
 import sys
-import time
 import json
 from datetime import datetime
-import requests
+import socks
+import socket
 from colorama import Fore, init
 
 init(autoreset=True)
@@ -14,7 +14,7 @@ class LogStream:
         self.log_file = log_file
 
     def write(self, message):
-        if message.strip():  
+        if message.strip():
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             log_message = f"{timestamp} - {message.strip()}"
             with open(self.log_file, 'a') as f:
@@ -35,7 +35,6 @@ except Exception as e:
     print(Fore.RED + f"Error al cargar el archivo de configuración: {e}")
     exit(1)
 
-
 proxy_host = config.get("proxy", {}).get("host")
 proxy_port = config.get("proxy", {}).get("port")
 proxy_user = config.get("proxy", {}).get("user")
@@ -49,7 +48,6 @@ password = config.get("password")
 cpu_count = config.get("cpu_count")
 log_file_path = config.get("log_file")
 
-
 if not all([proxy_host, proxy_port, hellminer_path, pool_url, username, password, cpu_count]):
     print(Fore.RED + "Faltan valores esenciales en la configuración.")
     exit(1)
@@ -57,28 +55,27 @@ if not all([proxy_host, proxy_port, hellminer_path, pool_url, username, password
 sys.stdout = LogStream(log_file_path)
 
 try:
-
-    print(Fore.YELLOW + "Probando la conexión a Google a través del proxy...")
-
-    proxy_url = f"http://{proxy_host}:{proxy_port}"
-    session = requests.Session()
-
-    if proxy_auth_required == 1 and proxy_user and proxy_password:
-        session.proxies = {
-            "http": f"http://{proxy_user}:{proxy_password}@{proxy_host}:{proxy_port}",
-            "https": f"http://{proxy_user}:{proxy_password}@{proxy_host}:{proxy_port}",
-        }
-        print(Fore.YELLOW + f"Conectando al proxy {proxy_host}:{proxy_port} con autenticación...")
+   
+    print(Fore.YELLOW + "Configurando el proxy para redirigir el tráfico...")
+    if proxy_auth_required and proxy_user and proxy_password:
+        socks.set_default_proxy(
+            socks.HTTP if proxy_host.startswith("http") else socks.SOCKS5,
+            addr=proxy_host,
+            port=int(proxy_port),
+            username=proxy_user,
+            password=proxy_password
+        )
     else:
-        session.proxies = {
-            "http": proxy_url,
-            "https": proxy_url,
-        }
-        print(Fore.YELLOW + f"Conectando al proxy {proxy_host}:{proxy_port} sin autenticación...")
+        socks.set_default_proxy(
+            socks.HTTP if proxy_host.startswith("http") else socks.SOCKS5,
+            addr=proxy_host,
+            port=int(proxy_port)
+        )
+    socket.socket = socks.socksocket
 
-    response = session.get("http://www.google.com", timeout=10)
-    print(Fore.GREEN + f"Conexión exitosa al proxy. Código de estado: {response.status_code}")
+    print(Fore.GREEN + "Proxy configurado con éxito.")
 
+    
     command = [
         hellminer_path,
         "-c", pool_url,
